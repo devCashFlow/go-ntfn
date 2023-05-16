@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WebSocket Client</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+  <style>
+    .navbar {
+      padding: 15px;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">Go Notifications</a>
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" id="notificationsDropdown" role="button" data-toggle="dropdown">
+            <span data-feather="bell"></span>
+            <span class="badge badge-danger" id="notificationsBadge" style="display: none;"></span>
+          </a>
+          <div class="dropdown-menu dropdown-menu-right" id="notificationsMenu">
+          </div>
+        </li>
+      </ul>
+    </div>
+  </nav>
+  <div class="container">
+    <div id="messages"></div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.9.0/feather.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+  <script>
+    const notificationsMenu = document.querySelector('#notificationsMenu');
+    const notificationsBadge = document.querySelector('#notificationsBadge');
+
+    let unreadNotifications = 0;
+
+    const socket = new WebSocket('ws://localhost:8080/ws');
+
+    socket.addEventListener('message', (event) => {
+      const notification = JSON.parse(event.data);
+      unreadNotifications++;
+      notificationsBadge.textContent = unreadNotifications;
+      notificationsBadge.style.display = 'inline';
+
+      const notificationItem = document.createElement('a');
+      notificationItem.className = 'dropdown-item d-flex align-items-center';
+
+      const messageSpan = document.createElement('span');
+      messageSpan.style.marginRight = '10px';
+      messageSpan.textContent = notification.message;
+      notificationItem.appendChild(messageSpan);
+
+      const ackButton = document.createElement('button');
+      ackButton.className = 'ml-2 btn btn-sm ml-auto';
+      ackButton.innerHTML = '<i data-feather="eye"></i>';
+      ackButton.addEventListener('click', () => {
+          socket.send(JSON.stringify({ id: notification.id }));
+          notificationItem.remove();
+          notificationItem.style.textDecoration = 'line-through';
+          ackButton.innerHTML = '<i data-feather="eye-off"></i>';
+          ackButton.disabled = true;
+          unreadNotifications--;
+          notificationsBadge.textContent = unreadNotifications;
+          if (unreadNotifications === 0) {
+              notificationsBadge.style.display = 'none';
+          }
+      });
+
+      notificationItem.appendChild(ackButton);
+      notificationsMenu.prepend(notificationItem);
+
+      feather.replace();
+    });
+
+    feather.replace();
+  </script>
+</body>
+
+</html>
